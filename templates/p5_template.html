@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>제목 — seeing-calculus</title>
+  <!-- p5.js 버전 고정: 예제가 나중에 깨지지 않도록 -->
+  <script src="https://cdn.jsdelivr.net/npm/p5@2.3.4/lib/p5.min.js"></script>
+  <style>
+    body { margin: 0; padding: 16px; font-family: "Malgun Gothic", sans-serif; background: #fafafa; }
+    main { display: inline-block; }
+    #info { margin-top: 8px; font-size: 14px; color: #333; }
+  </style>
+</head>
+<body>
+  <h3>제목</h3>
+  <main></main>
+  <div id="controls"></div>
+  <div id="info"></div>
+
+<script>
+// 사용법: 이 파일을 단계 폴더로 복사한 뒤 setup/draw만 고친다.
+let slider;
+
+function setup() {
+  createCanvas(500, 500).parent(document.querySelector("main"));
+  slider = createSlider(3, 60, 6, 1);   // (최소, 최대, 처음값, 간격)
+  slider.parent("controls").style("width", "300px");
+}
+
+function draw() {
+  background(255);
+  const n = slider.value();
+
+  // 예시: 정n각형 — 템플릿이 동작하는지 확인용
+  translate(width / 2, height / 2);
+  noFill(); stroke(30, 90, 200); strokeWeight(2);
+  beginShape();
+  for (let i = 0; i < n; i++) {
+    const a = TWO_PI * i / n;
+    vertex(200 * cos(a), 200 * sin(a));
+  }
+  endShape(CLOSE);
+
+  document.getElementById("info").textContent = `n = ${n}`;
+}
+</script>
+</body>
+</html>

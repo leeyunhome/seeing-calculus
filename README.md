@@ -6,6 +6,16 @@
 - 진행 계획: [PLAN.md](PLAN.md)
 - 사용 언어: Python, JavaScript(p5.js · D3 · Three.js · WebAudio), C, C++, C#, GLSL
 
+## 실행 방법
+
+```bash
+uv sync                                   # 처음 한 번: Python 3.12 + numpy, matplotlib 설치
+uv run python ch01_infinity/.../xxx.py    # Python 예제 (결과 png는 같은 폴더에 저장)
+```
+
+- `.html` 예제: 브라우저로 파일을 열면 바로 실행됩니다 (p5.js 등은 CDN에서 불러옴).
+- 새 단계는 [templates/](templates/)의 템플릿을 복사해서 시작합니다.
+
 ## 고지
 
 이 저장소는 책을 읽은 독자의 개인 학습 기록이며, 저자 및 출판사와 무관합니다.

@@ -39,7 +39,7 @@ visualize_book/
 ## 단계별 계획
 
 ### 0단계 — 준비
-- [ ] 폴더 구조 생성, Python 가상환경(uv) + matplotlib/numpy, p5.js CDN 템플릿 1개
+- [x] 폴더 구조 생성, Python 가상환경(uv, 3.12) + matplotlib/numpy, 템플릿 2개 (`templates/p5_template.html`, `templates/py_template.py`)
 
 ### 1장 Infinity — 무한을 다리로 쓰기 (가장 쉬움)
 - [ ] **1. 피자 증명** (A Pizza Proof, p.30) — JS/p5.js
