@@ -42,7 +42,7 @@ visualize_book/
 - [x] 폴더 구조 생성, Python 가상환경(uv, 3.12) + matplotlib/numpy, 템플릿 2개 (`templates/p5_template.html`, `templates/py_template.py`)
 
 ### 1장 Infinity — 무한을 다리로 쓰기 (가장 쉬움)
-- [ ] **1. 피자 증명** (A Pizza Proof, p.30) — JS/p5.js
+- [x] **1. 피자 증명** (A Pizza Proof, p.30) — JS/p5.js
   원을 n조각 내어 엇갈려 붙이면 평행사변형 → 직사각형(πr × r). 슬라이더로 n 증가.
 - [ ] **2. 0.333…의 우화** (p.35) — Python
   부분합 0.3, 0.33, … 과 1/3 사이 오차가 10배씩 줄어드는 그래프(로그축).

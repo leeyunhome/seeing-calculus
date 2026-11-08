@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>1. 피자 증명 — seeing-calculus</title>
+  <script src="https://cdn.jsdelivr.net/npm/p5@2.3.4/lib/p5.min.js"></script>
+  <style>
+    body { margin: 0; padding: 16px; font-family: "Malgun Gothic", sans-serif; background: #fafafa; color: #222; }
+    h3 { margin: 0 0 8px; }
+    main { display: block; }
+    #controls { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; margin: 8px 0; font-size: 14px; }
+    #controls input[type=range] { width: 260px; vertical-align: middle; }
+    button { font: inherit; padding: 4px 12px; }
+    table { border-collapse: collapse; font-size: 14px; }
+    td { padding: 2px 10px 2px 0; }
+    td.num { font-family: Consolas, monospace; text-align: right; }
+  </style>
+</head>
+<body>
+  <h3>피자 증명 — 원을 무한히 잘라 직사각형으로</h3>
+  <main></main>
+
+  <div id="controls">
+    <label>조각 수 n = <b id="nLabel">4</b>
+      <input id="n" type="range" min="4" max="128" step="2" value="4"></label>
+    <button id="play">펼치기 ▶</button>
+    <label><input id="spruce" type="checkbox"> 끝 조각을 반으로 잘라 반대편으로 옮기기</label>
+    <label><input id="limit" type="checkbox" checked> 극한 직사각형(점선) 보기</label>
+  </div>
+
+  <table id="info"></table>
+
+<script>
+// ---------------------------------------------------------------
+// 원(반지름 R)을 n조각 낸 뒤, 위쪽 절반의 조각은 끝이 위로(▲),
+// 아래쪽 절반의 조각은 끝이 아래로(▼) 가도록 엇갈려 붙인다.
+// 조각 하나 = "꼭짓점(apex) + 중심축 각도 + 축 기준 각도 범위[a0, a1]"
+// 애니메이션은 꼭짓점 위치와 축 각도를 원래 자리 → 목표 자리로 보간한다.
+// ---------------------------------------------------------------
+const R = 130;                 // 반지름(픽셀)
+const CX = 170, CY = 215;      // 원래 피자의 중심
+const X0 = 380, B = 320;       // 재배열한 모양의 왼쪽 아래 기준점
+
+const COL_UP = "#f4a261", COL_DOWN = "#e9c46a", COL_CRUST = "#8d5524";
+
+let t = 0, target = 0;         // 0 = 원, 1 = 재배열 완료
+const $ = id => document.getElementById(id);
+
+function makePieces(n, spruce) {
+  const m = n / 2, th = TWO_PI / n;
+  const w = 2 * R * sin(th / 2);          // 조각 하나의 현(弦) 길이 = 가로 폭
+  const h = R * cos(th / 2);              // 조각 꼭짓점에서 현까지 높이
+  const ps = [];
+
+  // 위쪽 절반(화면 각도 -π~0) → 끝이 위로 향하는 조각(축 -π/2)
+  for (let k = 0; k < m; k++) {
+    const src = -PI + (k + 0.5) * th;
+    const apex = { x: X0 + k * w, y: B };
+    if (k === 0 && spruce) {
+      // 맨 왼쪽 조각을 축을 따라 반으로 자르고, 왼쪽 반을 오른쪽 끝으로 옮긴다
+      ps.push({ src, dst: -HALF_PI, apex, a0: 0, a1: th / 2, up: true });
+      ps.push({ src, dst: -HALF_PI, apex: { x: X0 + m * w, y: B }, a0: -th / 2, a1: 0, up: true });
+    } else {
+      ps.push({ src, dst: -HALF_PI, apex, a0: -th / 2, a1: th / 2, up: true });
+    }
+  }
+  // 아래쪽 절반(화면 각도 0~π) → 끝이 아래로 향하는 조각(축 +π/2), 위 조각 사이에 끼움
+  for (let k = 0; k < m; k++) {
+    const src = PI - (k + 0.5) * th;
+    ps.push({ src, dst: HALF_PI, apex: { x: X0 + k * w + w / 2, y: B - h }, a0: -th / 2, a1: th / 2, up: false });
+  }
+  return ps;
+}
+
+function ease(s) { return s < 0.5 ? 4 * s * s * s : 1 - pow(-2 * s + 2, 3) / 2; }
+
+function drawPiece(p, s) {
+  const ax = lerp(CX, p.apex.x, s), ay = lerp(CY, p.apex.y, s);
+  const axis = lerp(p.src, p.dst, s);
+  const steps = max(2, ceil((p.a1 - p.a0) / 0.03));
+  const arc = [];
+  for (let i = 0; i <= steps; i++) {
+    const a = axis + lerp(p.a0, p.a1, i / steps);
+    arc.push([ax + R * cos(a), ay + R * sin(a)]);
+  }
+  // 조각 본체
+  fill(p.up ? COL_UP : COL_DOWN);
+  stroke(255, 255, 255, 180); strokeWeight(1);
+  beginShape();
+  vertex(ax, ay);
+  for (const [x, y] of arc) vertex(x, y);
+  endShape(CLOSE);
+  // 크러스트(둘레)
+  noFill(); stroke(COL_CRUST); strokeWeight(3);
+  beginShape();
+  for (const [x, y] of arc) vertex(x, y);
+  endShape();
+}
+
+function dashed(on) { drawingContext.setLineDash(on ? [6, 5] : []); }
+
+function setup() {
+  createCanvas(860, 400).parent(document.querySelector("main"));
+  textFont("Malgun Gothic");
+
+  // 스크린샷용 URL 옵션: ?n=16&t=1&spruce=1
+  const q = new URLSearchParams(location.search);
+  if (q.has("n")) $("n").value = q.get("n");
+  if (q.get("spruce") === "1") $("spruce").checked = true;
+  if (q.get("t") === "1") { t = target = 1; }
+
+  $("play").onclick = () => { target = target ? 0 : 1; };
+}
+
+function draw() {
+  background(255);
+  const n = +$("n").value;
+  const spruce = $("spruce").checked;
+  $("nLabel").textContent = n;
+  $("play").textContent = target ? "모으기 ◀" : "펼치기 ▶";
+
+  // t를 목표값으로 일정 속도로 이동
+  t += constrain(target - t, -0.012, 0.012);
+
+  // 원래 피자 자리(희미한 원)
+  dashed(true); noFill(); stroke(190); strokeWeight(1);
+  circle(CX, CY, 2 * R);
+  dashed(false);
+
+  // 조각들: 순서대로 살짝 시간차를 두고 움직인다
+  const ps = makePieces(n, spruce);
+  ps.forEach((p, i) => {
+    const s = constrain(t * 1.5 - 0.5 * i / ps.length, 0, 1);
+    drawPiece(p, ease(s));
+  });
+
+  // 원 상태 라벨
+  if (t < 0.02) {
+    stroke(60); strokeWeight(1.5);
+    line(CX, CY, CX + R, CY);
+    noStroke(); fill(30); textSize(16); textAlign(CENTER, BOTTOM);
+    text("r", CX + R / 2, CY - 4);
+    fill(COL_CRUST); textAlign(LEFT, CENTER);
+    text("둘레 C", CX + R * 0.75, CY - R * 0.85);
+  }
+
+  // 재배열 완료 상태: 극한 직사각형과 치수
+  if (t > 0.98) {
+    if ($("limit").checked) {
+      dashed(true); noFill(); stroke(220, 40, 60); strokeWeight(1.5);
+      rect(X0, B - R, PI * R, R);
+      dashed(false);
+    }
+    // 라벨이 조각과 겹치지 않도록: 아래 가리비 깊이, 왼쪽 비스듬한 변만큼 비켜 둔다
+    const sag = R * (1 - cos(PI / n));            // 아래로 튀어나온 가리비 깊이
+    const lean = spruce ? 0 : R * sin(PI / n);    // 손질 전에는 왼쪽 조각이 이만큼 튀어나옴
+    noStroke(); textSize(16);
+    fill(COL_CRUST); textAlign(CENTER, BOTTOM);
+    text("C/2  (크러스트 절반)", X0 + PI * R / 2, B - R - 8);
+    textAlign(CENTER, TOP);
+    text("C/2  (나머지 절반)", X0 + PI * R / 2, B + sag + 8);
+    fill(30); textAlign(RIGHT, CENTER);
+    text("r", X0 - lean - 12, B - R / 2);
+  }
+
+  // 수치: r = 1 기준으로 극한값에 얼마나 다가갔는지
+  const th = PI / n;
+  const width = n * sin(th);              // 가로 = 현 n/2개의 합 = n·sin(π/n)
+  const scallop = 1 - cos(th);            // 가리비(울퉁불퉁) 높이 = 1 − cos(π/n)
+  $("info").innerHTML = `
+    <tr><td colspan="3"><b>r = 1 일 때</b> (n이 커질수록 왼쪽 값이 오른쪽 극한값에 다가간다)</td></tr>
+    <tr><td>모양의 가로 길이 (현들의 합)</td><td class="num">${width.toFixed(6)}</td><td>→ π = C/2 ≈ 3.141593</td></tr>
+    <tr><td>가리비 높이 (위아래 울퉁불퉁함)</td><td class="num">${scallop.toFixed(6)}</td><td>→ 0</td></tr>
+    <tr><td>극한 직사각형의 넓이</td><td class="num">r × C/2</td><td>= r × πr = <b>πr²</b> (원의 넓이)</td></tr>`;
+}
+</script>
+</body>
+</html>
